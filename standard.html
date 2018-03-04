@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type='text/javascript' src="http://twitter.github.com/hogan.js/builds/3.0.1/hogan-3.0.1.js"></script>
+    <script type='text/javascript' src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type='text/javascript' src='jquery.ba-hashchange.min.js'></script>
+    <script type='text/javascript' src='jquery.swiftype.search.js'></script>
+    <link type='text/css' rel='stylesheet' href='search.css' media='all' />
+    <script type='text/javascript'>
+      $(function() {
+
+      var resultTemplate = Hogan.compile('<div class="st-result"><h3 class="title"><a href="{{url}}" class="st-search-result-link">{{title}}</a></h3><div class="st-metadata"><span class="st-snippet">{{{body}}}</span></div></div>');
+
+
+        var defaultPostRenderFunction = function(data) {
+          var totalResultCount = 0;
+          var $resultContainer = this.getContext().resultContainer;
+          if (data['info']) {
+            $.each(data['info'], function(index, value) {
+              totalResultCount += value['total_result_count'];
+            });
+          }
+
+          if (totalResultCount === 0) {
+            $resultContainer.html("<div id='st-no-results' class='st-no-results'>No results found.</div>");
+          }
+        };
+
+
+        var customPostRenderFunction = function(data) {
+
+          // Prepend search results number
+          var resultContainer = this.getContext().resultContainer;
+          resultContainer.prepend("Found " + data.info.page.total_result_count + " results");
+
+          // Pagination
+          var searchWord = $('.st-search-input').val();
+
+          var pagerInfo = data.info.page
+          var currentPage = pagerInfo.current_page;
+          var pageRange = 2;
+          var totalPage = data.info.num_pages;
+          console.log(data);
+
+          var rangeStart = currentPage - pageRange;
+          var rangeEnd = currentPage + pageRange;
+
+          if (rangeEnd > totalPage) {
+            rangeEnd = totalPage;
+            rangeStart = totalPage - pageRange * 2;
+            rangeStart = rangeStart < 1 ? 1 : rangeStart;
+          }
+
+          if (rangeStart <= 1) {
+            rangeStart = 1;
+            rangeEnd = Math.min(pageRange * 2 + 1, totalPage);
+          }
+
+
+          var pagination = "<ul>";
+
+          // previous link
+          if (currentPage <= 1) {
+            pagination += "<li><a href='#' class='disabled'>Prev</a></li>";
+          }
+          else {
+            pagination += '<li><a href="#stq=' + searchWord + '&stp=' + (currentPage - 1) + '">Prev</a></li>';
+          }
+
+          // startRange
+          if (rangeStart <= 3) {
+            for (i = 1; i < rangeStart; i++) {
+              if (i == currentPage) {
+                pagination += '<li class="active"<a>' + i + '</a></li>';
+              }
+              else {
+                pagination += '<li><a href="#stq=' + searchWord + '&stp=' + (i) + '">' + i + '</a></li>';
+              }
+            }
+          }
+          else {
+            pagination += '<li class="first"><a href="?page=1">1</a></li>';
+          }
+
+          // mid range
+          for (i = rangeStart; i <= rangeEnd; i++) {
+            if (i === currentPage) {
+              pagination += '<li class="active"><a>' + i + '</a></li>';
+            }
+            else {
+              pagination += '<li><a href="#stq=' + searchWord + '&stp=' + (i) +'">' + i + '</a></li>';
+            }
+          }
+
+          // end range
+          if (rangeEnd >= totalPage - 2) {
+            for (i = rangeEnd + 1; i <= totalPage; i++) {
+              pagination += '<li><a href="#stq=' + searchWord + '&stp=' + (i) + '">' + i + '</a></li>';
+            }
+          }
+          else {
+            pagination += '<li class="disabled"><a>...</a></li>';
+          }
+
+          // next
+
+
+          if (currentPage >= totalPage) {
+            pagination += '<li class="disabled"><a>Next</a></li>';
+          }
+          else {
+            pagination += '<li class="next"><a href="#stq=' + searchWord + '&stp=' + (currentPage + 1) + '">Next</a></li>';
+          }
+
+          $('.st-page').remove();
+          resultContainer.append(pagination);
+        }
+
+
+      var customRenderer = function(documentType, item) {
+        var data = {
+          title: item['title'],
+          url: item['url'],
+          body: item.highlight['body']
+        };
+        return resultTemplate.render(data);
+      };
+
+
+
+        $('#st-search-input').swiftypeSearch({
+          resultContainingElement: '#st-results-container',
+          engineKey: 'bbo1mzEUmpCKtsNvzu6s',
+          renderFunction: customRenderer,
+          perPage: 10,
+          postRenderFunction: customPostRenderFunction,
+          filters: function() {
+              var filter = $('#st-filter option:selected').val();
+              if (filter == 'All Results') {
+                  console.log();
+                  return {};
+              }
+              else{
+                  return {page: {tags:filter}};
+              }
+          }
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <h1>Swiftype Search</h1>
+
+    <select id="st-filter">
+      <option value="All Results">All Results</option>
+      <option value="About Halifax">About Halifax</option>
+      <option value="Boards And Committees">Board & Committees</option>
+    </select>
+    <p><script type="text/javascript">$(function(){$('#st-filter option:selected').val();});</script></p>
+    <form>
+      Search your site: <input type='text' id='st-search-input' class='st-search-input' />
+    </form>
+    <div id="st-results-container" class="st-result-listing"></div>
+  </body>
+</html>
