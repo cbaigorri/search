@@ -8,9 +8,7 @@
     <link type='text/css' rel='stylesheet' href='search.css' media='all' />
     <script type='text/javascript'>
       $(function() {
-
-      var resultTemplate = Hogan.compile('<div class="st-result"><h3 class="title"><a href="{{url}}" class="st-search-result-link">{{title}}</a></h3><div class="st-metadata"><span class="st-snippet">{{{body}}}</span></div></div>');
-
+        var resultTemplate = Hogan.compile('<div class="st-result"><h3 class="title"><a href="{{url}}" class="st-search-result-link">{{title}}</a></h3><div class="st-metadata"><span class="st-snippet">{{{body}}}</span></div></div>');
 
         var defaultPostRenderFunction = function(data) {
           var totalResultCount = 0;
@@ -26,8 +24,8 @@
           }
         };
 
-
         var customPostRenderFunction = function(data) {
+          console.log('customPostRenderFunction', data);
 
           // Prepend search results number
           var resultContainer = this.getContext().resultContainer;
@@ -39,11 +37,16 @@
           var pagerInfo = data.info.page
           var currentPage = pagerInfo.current_page;
           var pageRange = 2;
-          var totalPage = data.info.num_pages;
-          console.log(data);
-
+          var totalPage = data.info.page.num_pages;
           var rangeStart = currentPage - pageRange;
           var rangeEnd = currentPage + pageRange;
+
+          console.log('pagerInfo', pagerInfo);
+          console.log('currentPage', currentPage);
+          console.log('pageRange', pageRange);
+          console.log('totalPage', totalPage);
+          console.log('rangeStart', rangeStart);
+          console.log('rangeEnd', rangeEnd);
 
           if (rangeEnd > totalPage) {
             rangeEnd = totalPage;
@@ -56,7 +59,6 @@
             rangeEnd = Math.min(pageRange * 2 + 1, totalPage);
           }
 
-
           var pagination = "<ul>";
 
           // previous link
@@ -68,7 +70,7 @@
           }
 
           // startRange
-          if (rangeStart <= 3) {
+          if (rangeStart <= pageRange) {
             for (i = 1; i < rangeStart; i++) {
               if (i == currentPage) {
                 pagination += '<li class="active"<a>' + i + '</a></li>';
@@ -78,6 +80,7 @@
               }
             }
           }
+          // you can comment this out if you dont want to see the first link
           else {
             pagination += '<li class="first"><a href="?page=1">1</a></li>';
           }
@@ -103,8 +106,6 @@
           }
 
           // next
-
-
           if (currentPage >= totalPage) {
             pagination += '<li class="disabled"><a>Next</a></li>';
           }
@@ -114,19 +115,16 @@
 
           $('.st-page').remove();
           resultContainer.append(pagination);
-        }
-
-
-      var customRenderer = function(documentType, item) {
-        var data = {
-          title: item['title'],
-          url: item['url'],
-          body: item.highlight['body']
         };
-        return resultTemplate.render(data);
-      };
 
-
+        var customRenderer = function(documentType, item) {
+          var data = {
+            title: item['title'],
+            url: item['url'],
+            body: item.highlight['body']
+          };
+          return resultTemplate.render(data);
+        };
 
         $('#st-search-input').swiftypeSearch({
           resultContainingElement: '#st-results-container',
@@ -137,11 +135,11 @@
           filters: function() {
               var filter = $('#st-filter option:selected').val();
               if (filter == 'All Results') {
-                  console.log();
-                  return {};
+                console.log();
+                return {};
               }
               else{
-                  return {page: {tags:filter}};
+                return {page: {tags:filter}};
               }
           }
         });
